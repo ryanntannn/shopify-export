@@ -3,25 +3,68 @@ import { getOrders } from "./calls/calls";
 import { Order } from "./types/types";
 import { delay } from "./utils/delay";
 import { readData, storeData } from "./utils/store-data";
+import { parse } from "json2csv";
 
 async function main() {
-  // const response = await getOrders(5);
-  // const firstOrders = response.data.data.orders;
+  const response = await getOrders(5);
+  const firstOrders = response.data.data.orders;
 
-  // const orders = await recursivelyGetOrders(firstOrders.pageInfo.endCursor, [
-  //   ...firstOrders.edges,
-  // ]);
+  const orders = await recursivelyGetOrders(firstOrders.pageInfo.endCursor, [
+    ...firstOrders.edges,
+  ]);
 
   // storeData(orders, "output.json");
 
-  const orders = await readData<Order[]>("output.json");
+  // const orders = await readData<Order[]>("output.json");
+
+  const cleanedOrders = orders.flatMap((order) => [
+    ...order.node.lineItems.nodes.map((lineItem) => ({
+      id: order.node.id,
+      name: order.node.name,
+      email: order.node.email,
+      test: order.node.test,
+      fullyPaid: order.node.fullyPaid,
+      shippingAddress: JSON.stringify(
+        order.node.shippingAddress?.formatted ?? ""
+      ),
+      itemProductId: lineItem.product.id,
+      itemProductHandle: lineItem.product.handle,
+      itemVariantId: lineItem.variant.id,
+      itemVariantTitle: lineItem.variant.displayName,
+      itemQty: lineItem.quantity,
+      itemAttributes: JSON.stringify(lineItem.customAttributes),
+    })),
+  ]);
 
   console.log(orders);
 
+  getCounts(orders);
+
+  const opts = {
+    fields: [
+      "id",
+      "name",
+      "email",
+      "test",
+      "fullyPaid",
+      "shippingAddress",
+      "itemProductId",
+      "itemProductHandle",
+      "itemVariantId",
+      "itemVariantTitle",
+      "itemQty",
+      "itemAttributes",
+    ],
+  };
+
+  const csv = parse(cleanedOrders, opts);
+
+  storeData(csv, "output.csv", true);
+}
+
+async function getCounts(orders: Order[]) {
   const idCounts = new Map<string, number>();
-
   const attributeCounts = new Map<string, number>();
-
   const attributePairCounts = new Map<string, number>();
 
   orders

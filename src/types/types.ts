@@ -56,7 +56,7 @@ export type Order = {
         };
         variant: {
           id: string;
-          title: string;
+          displayName: string;
         };
       }[];
     };

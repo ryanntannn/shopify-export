@@ -1,8 +1,12 @@
 import { readFile, readFileSync, writeFileSync } from "fs";
 
-export const storeData = (data: any, path: string) => {
+export const storeData = (
+  data: any,
+  path: string,
+  skipStringify: boolean = false
+) => {
   try {
-    writeFileSync(path, JSON.stringify(data));
+    writeFileSync(path, skipStringify ? data : JSON.stringify(data));
   } catch (err) {
     console.error(err);
   }
